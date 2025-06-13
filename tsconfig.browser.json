@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "esnext",
+    "declaration": false,
+    "outDir": "build/browser"
+  },
+  "include": ["src/browser"]
+}
