@@ -5,7 +5,7 @@
   "scripts": {
     "build:node": "tsc",
     "build:browser": "rollup -c rollup.config.js",
-    "build": "npm run build:node && npm run build:browser",
+    "build": "rm -rf ./build && npm run build:node && npm run build:browser",
     "start": "node build/index.js"
   },
   "author": "",
@@ -13,26 +13,22 @@
   "description": "",
   "devDependencies": {
     "@figma/plugin-typings": "^1.113.0",
-    "@playwright/test": "^1.53.0",
     "@rollup/plugin-commonjs": "^28.0.3",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-typescript": "^12.1.2",
     "@types/node": "^24.0.1",
-    "cssnano": "^7.0.7",
     "esbuild": "^0.25.5",
-    "html-webpack-inline-source-plugin": "^0.0.10",
-    "html-webpack-plugin": "^5.6.3",
-    "postcss": "^8.5.5",
-    "react-dev-utils": "^12.0.1",
-    "react-docgen-typescript": "^2.4.0",
     "rollup": "^4.43.0",
     "rollup-plugin-esbuild": "^6.2.1",
-    "ts-loader": "^9.5.2",
-    "typescript": "^5.8.3",
-    "webpack": "^5.99.9",
-    "webpack-cli": "^6.0.1"
+    "typescript": "^5.8.3"
   },
   "dependencies": {
-    "file-type": "^12.4.2"
+    "@ai-sdk/google": "^1.2.19",
+    "@sparticuz/chromium": "^133.0.0",
+    "ai": "^4.3.16",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "puppeteer-core": "^24.10.1",
+    "zod": "^3.25.64"
   }
 }

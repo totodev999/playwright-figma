@@ -3,15 +3,15 @@ const resolve = require('@rollup/plugin-node-resolve').default;
 const commonjs = require('@rollup/plugin-commonjs');
 const esbuild = require('rollup-plugin-esbuild').default;
 
+// modules under src/browser should be built for browser environment.
 module.exports = {
   input: 'src/browser/index.ts',
   plugins: [
-    resolve({ extensions: ['.ts', '.js', '.mjs'] }), // ①モジュール解決
-    commonjs(), // ②CommonJS→ESM
+    resolve({ extensions: ['.ts', '.js', '.mjs'] }),
+    commonjs(),
     esbuild({
-      // ③TS除去のみ（ESNext出力）
       include: /\.[jt]sx?$/,
-      target: 'esnext', // ← ここを esnext に
+      target: 'esnext',
       tsconfig: 'tsconfig.browser.json',
     }),
   ],

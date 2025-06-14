@@ -1,38 +1,22 @@
-import { chromium } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
+import { generateDesign } from './generateDesign';
+import { getFigmaData } from './getFIgmaLayout';
 
-const getFigmaData = async (html: string) => {
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage();
+type Event = 'HTML' | 'GENERATE';
 
-  await page.setContent(html);
+export default async function index(event: Event, message: string) {
+  switch (event) {
+    case 'HTML':
+      await getFigmaData(message);
+      break;
+    case 'GENERATE':
+      await generateDesign(message);
+      break;
+    default:
+      throw new Error(`Hey, check your request ${event}`);
+  }
+}
 
-  const bundle = fs.readFileSync(
-    path.join(__dirname, 'browser.bundle.js'),
-    'utf-8'
-  );
-
-  await page.addScriptTag({ content: bundle });
-
-  // 3) ページ内で setContext を呼び出す
-  await page.evaluate(() => {
-    console.log(window);
-    // @ts-ignore
-    window.setContext(window);
-  });
-
-  // ページ内で htmlToFigma() を呼び出し
-  const layers = await page.evaluate(() => {
-    // @ts-ignore
-    return window.htmlToFigma('#root,#container');
-  });
-
-  await browser.close();
-
-  fs.writeFileSync('./res.txt', JSON.stringify(layers, null, 2));
-
-  return JSON.stringify(layers, null, 2);
-};
-
-getFigmaData(fs.readFileSync('./input.txt').toString());
+index(
+  'GENERATE',
+  'AIチャットの画面を作って。サイドバーに過去のチャット履歴が見れる。'
+);

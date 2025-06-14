@@ -136,3 +136,7 @@ dist
 .pnp.*
 
 build
+
+res.txt
+screen.jpeg
+sample.png

@@ -1,6 +1,5 @@
 import { getImageFills, parseUnits } from '../utils';
 import { LayerNode, SvgNode, Unit } from '../types';
-import fileType from 'file-type';
 import { context } from './utils';
 
 export function getBoundingClientRect(
