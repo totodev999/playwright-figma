@@ -48,10 +48,17 @@ export const generateDesign = async (
 
   messages.push({ role: 'user', content: message });
 
+  const transformed = messages.map((msg) => {
+    if (msg.role === 'assistant') {
+      return { role: msg.role, content: JSON.stringify(msg.content) };
+    }
+    return msg;
+  });
+
   const { object } = await generateObject({
     model: google(modelName),
     schema,
-    messages,
+    messages: transformed as CoreMessage[],
     providerOptions: {
       google: {
         thinkingConfig: {
@@ -65,7 +72,7 @@ export const generateDesign = async (
 
   const id = await upsertConversation(messageHistory?.id, [
     ...messages,
-    { role: 'assistant', content: JSON.stringify(object) },
+    { role: 'assistant', content: object },
   ]);
 
   return { id, html: object.html };

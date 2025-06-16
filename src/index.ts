@@ -1,6 +1,8 @@
 import express from 'express';
+import type { ErrorRequestHandler } from 'express';
 import { generateDesign } from './main/generateDesign';
 import { z } from 'zod';
+import { getConversation, getConversations } from './libs/db/db';
 
 type Event = 'HTML' | 'GENERATE';
 
@@ -33,7 +35,7 @@ if (process.argv[2] === 'server') {
       req.headers['x-message-id']
     );
 
-    res.on('close', () => {
+    res.on('finish', () => {
       console.log(
         'request ends',
         new Date().toLocaleString(),
@@ -49,20 +51,65 @@ if (process.argv[2] === 'server') {
 
     const data = createDesignSchema.parse({ messageId, message });
 
-    const { id, html } = await index('GENERATE', data.message, data.messageId);
-    res.setHeader('x-message-id', id).json({ html });
-    return;
+    try {
+      const { id, html } = await index(
+        'GENERATE',
+        data.message,
+        data.messageId
+      );
+      res.setHeader('x-message-id', id).json({ html });
+      return;
+    } catch (err) {
+      throw err;
+    }
   });
 
   app.get('/api/design', async (req, res, next) => {
-    res.json([{ role: 'assistant', html: [] }]);
-    return;
+    try {
+      const conversations = await getConversations();
+      const transformed = conversations.map((conversation) => ({
+        id: conversation.id,
+        message: conversation.messages.find((msg) => msg.role === 'user'),
+      }));
+      res.json(transformed);
+      return;
+    } catch (err) {
+      throw err;
+    }
+  });
+
+  app.get('/api/design/:id', async (req, res, next) => {
+    const { id } = req.params;
+
+    try {
+      const conversation = await getConversation(id);
+
+      if (!conversation) {
+        res.status(404).send('not found');
+        return;
+      }
+
+      const filtered = conversation.messages.filter(
+        (msg) => msg.role === 'user' || msg.role === 'assistant'
+      );
+      res.json({ id: conversation.id, messages: filtered });
+      return;
+    } catch (err) {
+      throw err;
+    }
   });
 
   app.all('/{*any}', (req, res, next) => {
     res.status(404).send('404');
     return;
   });
+
+  const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+    console.error(err);
+    res.status(500).send('Something broke!');
+    return;
+  };
+  app.use(errorHandler);
 
   const port = process.env.PORT || 3000;
   console.log(port);

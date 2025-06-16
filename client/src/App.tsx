@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Layout } from './coponents/Layout';
 import { DesignModal } from './coponents/DesingnModal';
 import React from 'react';
@@ -6,35 +6,54 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router';
 
-type assistantMessage = {
-  role: string;
+export type UserMessage = {
+  role: 'user';
+  content: string;
+};
+type AssistantMessage = {
+  role: 'assistant';
   content: {
     html: string[];
   };
+};
+type Message = UserMessage | AssistantMessage;
+
+const initialState = {
+  message: '',
+  messages: [] as Message[],
+  open: false,
+  html: '',
+  messageIndex: 0,
+  htmlIndex: 0,
 };
 
 export const App = () => {
   const { id } = useParams();
   const initialId = useRef(id);
 
+  console.log('initialId', initialId);
+
+  useEffect(() => {
+    setState(initialState);
+  }, [id]);
+
   const navigate = useNavigate();
 
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<
-    { role: string; content: string | { html: string[] } }[]
-  >([]);
-  const [open, setOpen] = useState(false);
-  const [html, setHtml] = useState('');
-  const [messageIndex, setMessageIndex] = useState(0);
-  const [_htmlIndex, setHtmlIndex] = useState(0);
+  const [state, setState] = useState(initialState);
 
-  const { data, isLoading, error } = useQuery({
+  const { message, messages, open, html, messageIndex, htmlIndex } = state;
+
+  console.log('state', state);
+
+  const { isLoading, error } = useQuery({
     queryKey: ['chat', id],
     queryFn: async () => {
       const res = await axios.get(`/api/design/${id}`);
+      setState((prev) => ({ ...prev, messages: res.data.messages }));
+      console.log('res.data', res.data);
       return res.data;
     },
-    enabled: !!initialId.current,
+    enabled: !!id,
   });
 
   const postMessage = useMutation({
@@ -45,40 +64,64 @@ export const App = () => {
         { headers: { 'x-message-id': id } }
       );
       return {
-        data: { role: 'assistant', content: { html: res.data.html } },
+        data: {
+          role: 'assistant',
+          content: { html: res.data.html },
+        } as AssistantMessage,
         id: res.headers['x-message-id'],
       };
     },
     onSuccess: (result) => {
-      setMessages((prev) => [...prev, result.data]);
-      !id && navigate(`/chat/${result.id}`, { replace: true });
+      setState((prev) => ({
+        ...prev,
+        messages: [...prev.messages, result.data],
+      }));
+      if (!id) navigate(`/chat/${result.id}`, { replace: true });
     },
   });
 
   const changeHtml = (num: number) => {
-    setHtmlIndex((prev) => {
-      if (
-        (messages[messageIndex] as assistantMessage).content.html.at(
-          prev + num
-        ) ||
-        prev + num === -1
-      ) {
-        setHtml(
-          (messages[messageIndex] as assistantMessage).content.html[
-            prev + num === -1
-              ? (messages[messageIndex] as assistantMessage).content.html
-                  .length - 1
-              : prev + num
-          ]
-        );
-        return prev + num === -1
-          ? (messages[messageIndex] as assistantMessage).content.html.length - 1
-          : prev + num;
-      } else {
-        setHtml((messages[messageIndex] as assistantMessage).content.html[0]);
-        return 0;
-      }
+    setState((prev) => {
+      const targetMessage = prev.messages[prev.messageIndex];
+      if (!targetMessage || targetMessage.role !== 'assistant') return prev;
+      const htmlArr = targetMessage.content.html;
+      let newIndex = prev.htmlIndex + num;
+      if (newIndex < 0) newIndex = htmlArr.length - 1;
+      if (newIndex >= htmlArr.length) newIndex = 0;
+      return {
+        ...prev,
+        htmlIndex: newIndex,
+        html: htmlArr[newIndex],
+      };
     });
+  };
+
+  const handleSeeResult = (index: number, message: Message) => {
+    if (message.role === 'assistant') {
+      setState((prev) => ({
+        ...prev,
+        messageIndex: index,
+        htmlIndex: 0,
+        html: message.content.html[0] ?? '',
+        open: true,
+      }));
+    }
+  };
+
+  const handleSend = () => {
+    setState((prev) => ({
+      ...prev,
+      messages: [...prev.messages, { role: 'user', content: message }],
+      message: '',
+    }));
+    postMessage.mutate(message);
+  };
+
+  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setState((prev) => ({
+      ...prev,
+      message: e.target.value,
+    }));
   };
 
   return (
@@ -91,18 +134,20 @@ export const App = () => {
           </div>
           {messages.map((message, index) => {
             return message.role === 'user' ? (
-              <div className="self-start bg-white w-fit max-w-10/12 rounded-lg p-2 shadow">
+              <div
+                key={message.content}
+                className="self-start bg-white w-fit max-w-10/12 rounded-lg p-2 shadow"
+              >
                 {message.content as string}
               </div>
             ) : (
-              <div className="ml-auto bg-blue-300 w-fit max-w-10/12 rounded-lg p-2 shadow">
+              <div
+                key={JSON.stringify(message.content)}
+                className="ml-auto bg-blue-300 w-fit max-w-10/12 rounded-lg p-2 shadow"
+              >
                 <button
                   className="bg-teal-400 p-3 rounded-2xl"
-                  onClick={() => {
-                    setMessageIndex(index);
-                    setHtml((message as assistantMessage).content.html[0]);
-                    setOpen(true);
-                  }}
+                  onClick={() => handleSeeResult(index, message)}
                 >
                   see result
                 </button>
@@ -116,17 +161,10 @@ export const App = () => {
             className="w-full border-2 border-gray-500 rounded-2xl p-6"
             rows={5}
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={(e) => handleMessageChange(e)}
           ></textarea>
           <button
-            onClick={() => {
-              setMessages((prev) => [
-                ...prev,
-                { role: 'user', content: message },
-              ]);
-              postMessage.mutate(message);
-              setMessage('');
-            }}
+            onClick={handleSend}
             disabled={postMessage.isPending || message.length < 3}
             className="w-18 border border-blue-500 rounded-2xl h-16 mt-auto disabled:bg-gray-500 border-gray-500"
           >
@@ -136,7 +174,7 @@ export const App = () => {
       </div>
       <DesignModal
         isOpen={open}
-        closeModal={() => setOpen(false)}
+        closeModal={() => setState((prev) => ({ ...prev, open: false }))}
         html={html}
         changeHtml={changeHtml}
       />

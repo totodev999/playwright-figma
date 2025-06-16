@@ -1,6 +1,9 @@
+import axios from 'axios';
 import { ReactNode, useState } from 'react';
 import React from 'react';
 import { Link, useNavigate } from 'react-router';
+import { UserMessage } from '../App';
+import { useQuery } from '@tanstack/react-query';
 
 const histories = [
   {
@@ -12,6 +15,22 @@ const histories = [
 ];
 
 export const Layout = ({ children }: { children: ReactNode }) => {
+  const {
+    data: chatHistories,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['chat', 'all'],
+    queryFn: async () => {
+      const res = await axios.get<
+        {
+          id: string;
+          message: UserMessage;
+        }[]
+      >(`/api/design`);
+      return res.data;
+    },
+  });
   const navigator = useNavigate();
   return (
     <div>
@@ -23,13 +42,16 @@ export const Layout = ({ children }: { children: ReactNode }) => {
               <div>
                 <p className="text-white font-bold">History</p>
               </div>
-              <li className="max-h-[80vh] overflow-y-scroll">
-                <ul role="list" className="space-y-1 divide-y divide-white">
-                  {histories.map((item) => (
-                    <li key={item.href}>
-                      <Link to={item.href}>
-                        <p className="text-white text-center text-wrap break-words">
-                          {item.name}
+              <li className="max-h-[80vh] overflow-y-scroll py-4">
+                <ul
+                  role="list"
+                  className="space-y-1 divide-dotted divide-y divide-white"
+                >
+                  {chatHistories?.map((history) => (
+                    <li key={history.id}>
+                      <Link to={`/chat/${history.id}`}>
+                        <p className="text-white text-center text-wrap break-words line-clamp-2">
+                          {history.message.content}
                         </p>
                       </Link>
                     </li>
@@ -38,10 +60,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
               </li>
             </ul>
             <button
-              onClick={() => {
-                navigator('/chat');
-                navigator(0);
-              }}
+              onClick={() => navigator('/chat')}
               className="text-white w-full h-14 grid place-content-center border border-white "
             >
               New chat
