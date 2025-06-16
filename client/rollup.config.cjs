@@ -5,7 +5,7 @@ const esbuild = require('rollup-plugin-esbuild').default;
 
 // modules under src/browser should be built for browser environment.
 module.exports = {
-  input: 'src/browser/index.ts',
+  input: 'figmaLib/browser/index.ts',
   plugins: [
     resolve({ extensions: ['.ts', '.js', '.mjs'] }),
     commonjs(),
@@ -16,7 +16,7 @@ module.exports = {
     }),
   ],
   output: {
-    file: 'build/browser.bundle.js',
+    file: './public/browser.bundle.js',
     format: 'iife',
     name: 'browserBundle',
   },

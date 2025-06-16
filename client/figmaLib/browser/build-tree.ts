@@ -1,7 +1,5 @@
-import { getBoundingClientRect } from './dom-utils';
-import { hasChildren, traverse } from '../utils';
+import { traverse } from '../utils';
 import { LayerNode, WithRef } from '../types';
-import { context } from './utils';
 
 function getParent(layer: LayerNode, root: WithRef<FrameNode>) {
   let response: LayerNode | null = null;

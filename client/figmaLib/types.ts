@@ -1,3 +1,5 @@
+import '@figma/plugin-typings';
+
 export interface Unit {
   unit: 'PIXELS';
   value: number;

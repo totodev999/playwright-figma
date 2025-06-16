@@ -1,4 +1,4 @@
-import { getImageFills, parseUnits } from '../utils';
+import { parseUnits } from '../utils';
 import { LayerNode, SvgNode, Unit } from '../types';
 import { context } from './utils';
 
